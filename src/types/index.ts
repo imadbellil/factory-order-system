@@ -9,6 +9,12 @@ export interface User {
 
 export type OrderStatus = 'pending' | 'accepted' | 'rejected' | 'en_cours' | 'fini' | 'charge';
 
+export interface ProductionEstimation {
+  days: number;
+  hours: number;
+  minutes: number;
+}
+
 export interface Order {
   id: string;
   orderNumber?: string;
@@ -28,6 +34,7 @@ export interface Order {
   rejectionReason?: string;
   history: { status: string; date: Timestamp | Date; userId: string; }[];
   comment?: string;
+  productionEstimation?: ProductionEstimation;
 }
 
 export interface CreateOrderData {

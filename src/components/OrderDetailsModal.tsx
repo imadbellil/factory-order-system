@@ -1,7 +1,7 @@
 import React from 'react';
 import { Order } from '../types';
 import { format } from 'date-fns';
-import { X, Calendar, User, Factory, Hash, Package, Box, Info, CheckCircle, Tag, Truck } from 'lucide-react';
+import { X, Calendar, User, Factory, Hash, Package, Box, Info, CheckCircle, Tag, Truck, Clock } from 'lucide-react';
 import { StatusBadge } from './StatusBadge';
 import { ORDER_STATUS_LABELS } from '../utils/constants';
 
@@ -32,6 +32,15 @@ const toDate = (date: any): Date | null => {
   }
   return null;
 };
+
+function estimationToString(est?: { days: number; hours: number; minutes: number }): string {
+  if (!est) return '';
+  const parts = [];
+  if (est.days) parts.push(`${est.days}j`);
+  if (est.hours) parts.push(`${est.hours}h`);
+  if (est.minutes) parts.push(`${est.minutes}min`);
+  return parts.join(' ') || '0min';
+}
 
 export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order, onClose }) => {
   if (!order) return null;
@@ -82,6 +91,11 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order, onC
             <DetailRow icon={<Calendar size={16}/>} label="Dernière modification">
               {updatedAtDate ? format(updatedAtDate, "eeee d MMMM yyyy 'à' HH:mm") : 'N/A'}
             </DetailRow>
+            {order.productionEstimation && (
+              <DetailRow icon={<Clock size={16}/>} label="Estimation de production">
+                {estimationToString(order.productionEstimation)}
+              </DetailRow>
+            )}
           </dl>
 
           <div className="bg-blue-50/50 border border-blue-200 rounded-lg p-4">

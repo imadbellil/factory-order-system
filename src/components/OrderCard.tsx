@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useEffect, useState } from 'react';
 import { Order } from '../types';
 import { StatusBadge } from './StatusBadge';
 import { format } from 'date-fns';
@@ -34,8 +34,52 @@ const toDate = (date: any): Date | null => {
   return null;
 };
 
+function estimationToMs(est?: { days: number; hours: number; minutes: number }): number {
+  if (!est) return 0;
+  return (
+    (est.days || 0) * 24 * 60 * 60 * 1000 +
+    (est.hours || 0) * 60 * 60 * 1000 +
+    (est.minutes || 0) * 60 * 1000
+  );
+}
+
+function formatMs(ms: number): string {
+  if (ms <= 0) return 'Terminé';
+  const totalSeconds = Math.floor(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (hours > 0) return `${hours}:${minutes.toString().padStart(2,'0')}:${seconds.toString().padStart(2,'0')}`;
+  return `${minutes}:${seconds.toString().padStart(2,'0')}`;
+}
+
 export const OrderCard: React.FC<OrderCardProps> = ({ order, children, onClick }) => {
   const createdAtDate = toDate(order.createdAt);
+  const updatedAtDate = toDate(order.updatedAt);
+
+  // Timer logic
+  const [remaining, setRemaining] = useState<number | null>(null);
+  useEffect(() => {
+    if (order.status === 'en_cours' && order.productionEstimation && updatedAtDate) {
+      const duration = estimationToMs(order.productionEstimation);
+      const end = updatedAtDate.getTime() + duration;
+      const update = () => setRemaining(end - Date.now());
+      update();
+      const interval = setInterval(update, 1000);
+      return () => clearInterval(interval);
+    } else {
+      setRemaining(null);
+    }
+  }, [order.status, order.productionEstimation, updatedAtDate]);
+
+  function estimationToString(est?: { days: number; hours: number; minutes: number }): string {
+    if (!est) return '';
+    const parts = [];
+    if (est.days) parts.push(`${est.days}j`);
+    if (est.hours) parts.push(`${est.hours}h`);
+    if (est.minutes) parts.push(`${est.minutes}min`);
+    return parts.join(' ') || '0min';
+  }
 
   return (
     <div 
@@ -60,6 +104,14 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order, children, onClick }
 
       {/* Body */}
       <div className="p-5 flex-grow space-y-4">
+        {/* Timer for en_cours */}
+        {order.status === 'en_cours' && order.productionEstimation && (
+          <div className="flex items-center gap-2 text-blue-600 font-semibold text-lg">
+            <Clock size={18} />
+            <span>{formatMs(remaining ?? 0)}</span>
+            <span className="text-xs text-gray-500">/ {estimationToString(order.productionEstimation)}</span>
+          </div>
+        )}
         <InfoLine icon={<User size={16}/>} label="Client" value={order.client || 'N/A'} />
         <InfoLine icon={<Factory size={16}/>} label="Machine" value={order.machineName || 'N/A'} />
 

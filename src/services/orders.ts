@@ -14,7 +14,7 @@ import {
   runTransaction,
   Timestamp
 } from 'firebase/firestore';
-import { CreateOrderData, Order, OrderStatus } from '../types';
+import { CreateOrderData, Order, OrderStatus, ProductionEstimation } from '../types';
 import { createNotification } from './notifications';
 
 export const ordersCollection = collection(db, 'orders');
@@ -88,7 +88,14 @@ export const subscribeToOrders = (
   });
 };
 
-export const updateOrderStatus = async (orderId: string, status: OrderStatus, rejectionReason?: string, userId?: string, userEmail?: string): Promise<void> => {
+export const updateOrderStatus = async (
+  orderId: string,
+  status: OrderStatus,
+  rejectionReason?: string,
+  userId?: string,
+  userEmail?: string,
+  productionEstimation?: ProductionEstimation
+): Promise<void> => {
   try {
     const updateData: any = {
       status,
@@ -97,6 +104,9 @@ export const updateOrderStatus = async (orderId: string, status: OrderStatus, re
     if (rejectionReason) {
       updateData.rejectionReason = rejectionReason;
     }
+    if (productionEstimation) {
+      updateData.productionEstimation = productionEstimation;
+    }
     await updateDoc(doc(db, 'orders', orderId), updateData);
     await createNotification({
       type: status === 'accepted' ? 'accepted' : 'status',
@@ -104,7 +114,7 @@ export const updateOrderStatus = async (orderId: string, status: OrderStatus, re
       status,
       message: status === 'accepted'
         ? `Commande acceptée par ${userEmail || 'un utilisateur'}`
-        : `Statut de la commande modifié: ${status}`,
+        : '',
       icon: status === 'accepted' ? 'check' : 'refresh',
     });
   } catch (error) {
