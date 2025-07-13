@@ -6,9 +6,21 @@ import { Login } from './pages/Login';
 import { RouibaDashboard } from './pages/RouibaDashboard';
 import { MeftahDashboard } from './pages/MeftahDashboard';
 import { HangarDashboard } from './pages/HangarDashboard';
+import { onForegroundMessage } from './services/notifications';
 
 function App() {
   const { user, loading } = useAuth();
+  const [toast, setToast] = React.useState<{ title: string; body: string } | null>(null);
+
+  React.useEffect(() => {
+    const unsub = onForegroundMessage((payload: any) => {
+      if (payload?.notification) {
+        setToast({ title: payload.notification.title, body: payload.notification.body });
+        setTimeout(() => setToast(null), 5000);
+      }
+    });
+    return () => { if (typeof unsub === 'function') unsub(); };
+  }, []);
 
   if (loading) {
     return (
@@ -45,12 +57,20 @@ function App() {
   };
 
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={getDashboard()} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Router>
+    <>
+      {toast && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-blue-600 text-white px-6 py-3 rounded-xl shadow-lg flex flex-col items-center animate-fade-in">
+          <strong>{toast.title}</strong>
+          <span>{toast.body}</span>
+        </div>
+      )}
+      <Router>
+        <Routes>
+          <Route path="/" element={getDashboard()} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Router>
+    </>
   );
 }
 
